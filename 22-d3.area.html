@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<svg width="960" height="500"></svg>
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+    var svg = d3.select("svg"),
+            margin = {top: 40, left: 40, bottom: 40, right: 40},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+
+    var x = d3.scaleLinear()
+            .domain([0, 60])
+            .range([0, width]);
+
+    var y = d3.scaleLinear()
+            .domain([0, 255])
+            .range([height, 0]);
+
+    var g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var data = [];
+    for(let i = 0; i < 40; i++){
+        data.push([i, q(i)]);
+    }
+
+
+    function q(x){
+        return -0.5*Math.pow(x,2)+20*x;
+    }
+    console.log(data);
+    let circles = g.selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("cx", (d) => x(d[0]))
+    .attr("cy", (d) => y(q(d[0])))
+    .attr("r", (d) => 3);
+
+    let line = g.append("g")
+            .attr("class", "lines")
+            .selectAll("path")
+            .data(data)
+            .enter().append("g")
+            .attr("fill", "none")
+            .attr("stroke", "red");
+    circles.remove();
+
+
+    function update(){
+        console.log(data);
+        circles.remove();
+        line.remove();
+
+        line = g.append("g")
+                .attr("class", "lines")
+                .selectAll("path")
+                .data(data)
+                .enter().append("g")
+                .attr("fill", "none")
+                .attr("stroke", "red");
+
+        let l = d3.line()
+                .x( (d) => x(d[0]))
+                .y((d)=> y(d[1]))
+                .curve(d3.curveCatmullRom.alpha(0.5));
+
+        line.append("path").attr("stroke-width", 1).datum(data).attr("d", l);
+
+
+        circles = g.selectAll("circle")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", (d) => x(d[0]))
+                        .attr("cy", (d) => y(d[1]))
+                        .attr("r", (d) => 5);
+
+
+
+        circles.classed("dragging", true).call(
+                d3.drag()
+                        .on("start", (d, e) => console.log("dragginStart",d,e,d3.event.x,d3.event.y))
+                        .on("drag", (d) => {
+                          //  d[0] = x.invert(d3.event.x);
+                            d[1] = y.invert(d3.event.y);
+                        })
+                        .on("end", (d) => {
+                            circles.classed("dragging", false);
+                            update();
+                        })
+        );
+        line.exit().remove();
+
+        circles.exit().remove();
+
+    }
+
+
+    update();
+</script>

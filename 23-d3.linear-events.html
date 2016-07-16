@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<svg width="960" height="500" color="green">
+    <rect style='fill:blue;opacity:0.1'  width='960' height='500' />
+</svg>
+
+<style>
+    svg text{
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+
+</style>
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+    var svg = d3.select("svg").attr("background", "green"),
+            margin = {top: 40, left: 40, bottom: 40, right: 40},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+    let r = 3;
+    var x = d3.scaleLinear()
+            .domain([0, 60])
+            .range([0, width]);
+
+    var y = d3.scaleLinear()
+            .domain([0, 255])
+            .range([height, 0]);
+
+    var g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var data = [[0,50],[60,50]];
+
+    let circles = g.selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", (d) => x(d[0]))
+        .attr("cy", (d) => y(d[0]))
+        .attr("r", (d) => r);
+
+    let line = g.append("g")
+        .attr("class", "lines")
+        .selectAll("path")
+        .data(data)
+        .enter().append("g")
+        .attr("fill", "none")
+        .attr("stroke", "red");
+
+    let insertPoint = (d,e) =>{
+        data.push([x.invert(d3.event.x - margin.left), y.invert(d3.event.y - margin.top)]);
+        data.sort((b,a) => b[0] - a[0]);
+        update();
+    }
+
+    let removeNode = (d,i) =>{
+        d3.event.preventDefault();
+        console.log(i, data.length-1);
+        d3.select("#t"+i).remove();
+        if(i != 0 && i != data.length -1){
+            data.splice(i,1);
+            update();
+        }
+
+
+    }
+
+    svg.selectAll("rect")
+            .on("click", insertPoint);
+
+    function update(){
+        console.log(data);
+
+        circles.remove();
+        line.remove();
+
+        line = g.append("g")
+            .attr("class", "lines")
+            .selectAll("path")
+            .data(data)
+            .enter().append("g")
+            .attr("fill", "blue")
+            .attr("stroke", "red").on("click", insertPoint);
+
+        let l = d3.line()
+            .x( (d) => x(d[0]))
+            .y((d)=> y(d[1]))
+            .curve(d3.curveCatmullRom.alpha(0.5));
+
+        line.append("path").attr("stroke-width", 1).datum(data).attr("d", l);
+
+        circles = g.selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", (d) => x(d[0]))
+            .attr("cy", (d) => y(d[1]))
+            .attr("r", (d) => r)
+            .on("contextmenu", removeNode)
+            .on("mouseover", handleMouseOver)
+            .on("mouseout", handleMouseOut);
+
+        circles.call(
+                d3.drag().on("start", (d, e) => {
+                    circles.classed("dragging", true);
+                    console.log("dragginStart",d,e,d3.event.x,d3.event.y);
+                    d3.select("#t"+e).remove();
+                })
+    .on("drag", (d,e) => {
+            //  d[0] = x.invert(d3.event.x);
+            circles.classed("dragging", true);
+        d[1] = y.invert(d3.event.y);
+        d3.select("#t"+e).remove();
+        update();
+    })
+    .on("end", (d) => {
+            circles.classed("dragging", false);
+        update();
+    })
+    );
+
+
+
+        line.exit().remove();
+
+        circles.exit().remove();
+
+    }
+
+
+
+    function handleMouseOver(d, i) {  // Add interactivity
+        if(!circles.classed("dragging")){
+            this.style.fill = "orange";
+
+            // Use D3 to select element, change color and size
+            d3.select(this).attr("r",r*3);
+
+            // Specify where to put label of text
+            let t2 = g.selectAll("text")
+                    .data([createId(d)]).enter()
+                    .append("text")
+                    .attr("x", x(d[0])+10)
+                    .attr("y", y(d[1])-10)
+                    .attr("id", "t"+i)
+                    .text(d[1].toFixed(1));
+        }
+
+    }
+
+    createId = function(d){
+        return  ""+d[0].toFixed(0)+"-"+d[1].toFixed(0);
+    }
+
+    function handleMouseOut(d, i) {
+
+        this.style.fill = "black";
+        // Use D3 to select element, change color back to normal
+        d3.select(this).attr("r", r);
+
+        // Select text by id and then remove
+        d3.select("#t"+i).remove();  // Remove text location
+    }
+
+
+
+
+    update();
+</script>

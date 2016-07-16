@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Data Binding</title>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+    </head>
+
+    <style media="screen">
+    div.bar {
+      display: inline-block;
+      width: 20px;
+      height: 75px;
+      background-color: teal;
+    }
+
+    </style>
+    <body>
+        <script type="text/javascript">
+        'use scrict'
+        var dataset = [ 5, 10, 15, 20, 25];
+
+        d3.select("body").selectAll("div")
+          .data(dataset)
+          .enter()
+          .append("div")
+          .style("height", (d) => d*5+'px')
+          .style("margin-right", "10px")
+          .attr("class", "bar");
+
+        </script>
+    </body>
+</html>
